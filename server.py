@@ -1,32 +1,25 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import sys, os
 from datetime import datetime
+from pathlib import Path
 
-LOG_FILE = "log.txt"
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
 
-class LogHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        length = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(length).decode("utf-8")
-        line = f"[{datetime.now().isoformat()}] {self.client_address[0]} {body}"
-        print(line, flush=True)
-        with open(LOG_FILE, "a") as f:
-            f.write(line + "\n")
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"OK\n")
+app = FastAPI(title="postboard")
+LOG_FILE = Path("log.txt")
 
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        try:
-            with open(LOG_FILE) as f:
-                self.wfile.write(f.read().encode())
-        except FileNotFoundError:
-            self.wfile.write(b"(empty)\n")
 
-if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.getenv("PORT", 8080))
-    server = HTTPServer(("0.0.0.0", port), LogHandler)
-    print(f"Listening on 0.0.0.0:{port}")
-    server.serve_forever()
+@app.post("/")
+async def receive(request: Request):
+    body = await request.body()
+    line = f"[{datetime.now().isoformat()}] {request.client.host} {body.decode()}"
+    print(line, flush=True)
+    with LOG_FILE.open("a") as f:
+        f.write(line + "\n")
+    return PlainTextResponse("OK\n")
+
+
+@app.get("/")
+async def view():
+    if LOG_FILE.exists():
+        return PlainTextResponse(LOG_FILE.read_text())
+    return PlainTextResponse("(empty)\n")
