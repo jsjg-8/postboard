@@ -20,7 +20,7 @@ async def receive(request: Request):
             f.write(line + "\n")
     except OSError:
         pass
-    return PlainTextResponse("OK\n")
+    return PlainTextResponse("OK:" + body.decode() + "\n")
 
 
 @app.get("/")
