@@ -1,5 +1,5 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import sys
+import sys, os
 from datetime import datetime
 
 LOG_FILE = "log.txt"
@@ -26,7 +26,7 @@ class LogHandler(BaseHTTPRequestHandler):
             self.wfile.write(b"(empty)\n")
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.getenv("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), LogHandler)
     print(f"Listening on 0.0.0.0:{port}")
     server.serve_forever()
